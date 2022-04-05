@@ -1185,7 +1185,7 @@ OWCanMove:
     RTS
 
   @Fighting:
-    LDA #10              ; 10 / 256 chance of getting in a random encounter normally
+    LDA #0              ; 10 / 256 chance of getting in a random encounter normally
     LDX vehicle          ; check the current vehicle
     CPX #$04             ; see if it's the ship
     BNE :+               ; if it is....
@@ -5204,6 +5204,26 @@ ShowDialogueBox:
     BEQ :+                 ; if dlgsfx > 1...
       LDX #$58             ;  ... then use track $58 instead (treasure chest ditty)
 :   STX music_track        ; write the desired track to the music_track to get it started
+    LDA CHAN_SQ1 + ch_scoreptr
+    STA sq1_scoreptr_backup
+    LDA CHAN_SQ1 + ch_lenctr
+    STA sq1_lenctr_backup
+    LDA CHAN_SQ1 + ch_loopctr
+    STA sq1_loopctr_backup
+
+    LDA CHAN_SQ2 + ch_scoreptr
+    STA sq2_scoreptr_backup
+    LDA CHAN_SQ2 + ch_lenctr
+    STA sq2_lenctr_backup
+    LDA CHAN_SQ2 + ch_loopctr
+    STA sq2_loopctr_backup
+
+    LDA CHAN_TRI + ch_scoreptr
+    STA tri_scoreptr_backup
+    LDA CHAN_TRI + ch_lenctr
+    STA tri_lenctr_backup
+    LDA CHAN_TRI + ch_loopctr
+    STA tri_loopctr_backup
 
   ; there are two seperate 'WaitForButton' loops because the dialogue box closes when the
   ; user presses A, or when they press any directional button.  The first loop waits
@@ -5265,7 +5285,6 @@ ShowDialogueBox:
     STA music_track
     LDA #0
     STA dlgsfx              ; and clear sfx flag
-
 
 
   @StartClosing:
@@ -7187,10 +7206,10 @@ OpenTreasureChest:
                              ;  then continue on to mark the chest as open
 
   @OpenChest:
-    LDX tileprop+1           ; get the ID of this chest
-    LDA game_flags, X        ; flip on the TCOPEN flag to mark this TC as open
-    ORA #GMFLG_TCOPEN
-    STA game_flags, X
+  ;  LDX tileprop+1           ; get the ID of this chest
+  ;  LDA game_flags, X        ; flip on the TCOPEN flag to mark this TC as open
+  ;  ORA #GMFLG_TCOPEN
+  ;  STA game_flags, X
 
     INC dlgsfx               ; set dlgsfx to 2 to play the TC jingle
     INC dlgsfx
@@ -7247,38 +7266,38 @@ OpenTreasureChest:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 AddGPToParty:
-    LDA gold        ; Add the 3 bytes of GP to the
-    CLC             ;  party's gold total
-    ADC tmp
-    STA gold
-    LDA gold+1
-    ADC tmp+1
-    STA gold+1
-    LDA gold+2
-    ADC tmp+2
-    STA gold+2
+;    LDA gold        ; Add the 3 bytes of GP to the
+;    CLC             ;  party's gold total
+;    ADC tmp
+;    STA gold
+;    LDA gold+1
+;    ADC tmp+1
+;    STA gold+1
+;    LDA gold+2
+;    ADC tmp+2
+;    STA gold+2
 
-    CMP #^1000000   ; see if high byte is over maximum
-    BCC @Exit       ; if gold_high < max_high, exit
+;    CMP #^1000000   ; see if high byte is over maximum
+;    BCC @Exit       ; if gold_high < max_high, exit
 
-    LDA gold+1
-    CMP #>1000000   ; check middle bytes
-    BCC @Exit       ; if gold < max, exit
-    BEQ @CheckLow   ; if gold = max, check low bytes
-    BCS @Max        ; if gold > max, over maximum
+;    LDA gold+1
+;    CMP #>1000000   ; check middle bytes
+;    BCC @Exit       ; if gold < max, exit
+;    BEQ @CheckLow   ; if gold = max, check low bytes
+;    BCS @Max        ; if gold > max, over maximum
 
   @CheckLow:
-    LDA gold
-    CMP #<1000000   ; check low bytes
-    BCC @Exit       ; if gold < max, exit
+;    LDA gold
+;    CMP #<1000000   ; check low bytes
+;    BCC @Exit       ; if gold < max, exit
 
   @Max:
-    LDA #<999999    ; replace gold with maximum
-    STA gold
-    LDA #>999999
-    STA gold+1
-    LDA #^999999
-    STA gold+2
+;    LDA #<999999    ; replace gold with maximum
+;    STA gold
+;    LDA #>999999
+;    STA gold+1
+;    LDA #^999999
+;    STA gold+2
 
   @Exit:
     RTS

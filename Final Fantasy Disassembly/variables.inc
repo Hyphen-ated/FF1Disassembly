@@ -154,6 +154,16 @@ enCHRpage       = $6B
 
 altareffect     = $6C  ; flag to indicate altar effect is to occur (screen shaking, monochrome diagonal window thing)
 
+sq1_scoreptr_backup    = $73 ; backup info for restoring exact music state after the dialogue box changes it
+sq1_lenctr_backup      = $74
+sq1_loopctr_backup     = $75
+sq2_scoreptr_backup    = $76
+sq2_lenctr_backup      = $77
+sq2_loopctr_backup     = $78
+tri_scoreptr_backup    = $79
+tri_lenctr_backup      = $7A
+tri_loopctr_backup     = $7B
+
 dlgmusic_backup = $7C  ; backup music track for restoring music after the dialogue box changes it
 dlgsfx          = $7D  ; flag to indicate to play a sound effect after opening dialogue box.  0=no sfx, 1=fanfare, else=treasure
 

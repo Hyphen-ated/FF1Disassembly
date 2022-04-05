@@ -1374,8 +1374,7 @@ Music_NewSong:
     CMP #2*3             ; there are 3 channels to load/prime (2 squares + 1 tri).
     BCC @Exit            ; check to see if all 3 of these have been primed.  If not, just exit
                          ;  otherwise... all channels are primed -- music is all set for playback
-      LDA #0
-      STA music_track    ; zero music_track to indicate that a track is playing
+
 
       LDA #0                    ; zero loop counters for all channels
       STA ch_loopctr+CHAN_SQ1
@@ -1389,6 +1388,47 @@ Music_NewSong:
 
       LDA #0             ; then zero sq2_sfx *again*
       STA sq2_sfx        ;  (again this seems silly to do here)
+
+      LDA music_track ; if we're playing chest jingles, skip
+      CMP #$14
+      BEQ @SkipMusicRestore
+
+      LDA music_track ; if we're playing chest jingles, skip
+      CMP #$18
+      BEQ @SkipMusicRestore
+
+      LDA sq1_scoreptr_backup ; if there's no saved music state, skip
+      CMP #$00
+      BEQ @SkipMusicRestore
+
+
+
+      STA CHAN_SQ1 + ch_scoreptr
+      LDA sq1_lenctr_backup
+      STA CHAN_SQ1 + ch_lenctr
+      LDA sq1_loopctr_backup
+      STA CHAN_SQ1 + ch_loopctr
+
+      LDA sq2_scoreptr_backup
+      STA CHAN_SQ2 + ch_scoreptr
+      LDA sq2_lenctr_backup
+      STA CHAN_SQ2 + ch_lenctr
+      LDA sq2_loopctr_backup
+      STA CHAN_SQ2 + ch_loopctr
+
+      LDA tri_scoreptr_backup
+      STA CHAN_TRI + ch_scoreptr
+      LDA tri_lenctr_backup
+      STA CHAN_TRI + ch_lenctr
+      LDA tri_loopctr_backup
+      STA CHAN_TRI + ch_loopctr
+
+      LDA #0
+      STA sq1_scoreptr_backup
+
+    @SkipMusicRestore:
+      LDA #0
+      STA music_track    ; zero music_track to indicate that a track is playing
 
       STA $4002          ; and zero all channel freqs except noise
       STA $4003          ;  utterly pointless as they've already been zerod
@@ -3011,40 +3051,40 @@ lut_CreditsText:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 DrawAllPuzzlePieces:
-    JSR ClearOAM_BankD     ; clear OAM
+;    JSR ClearOAM_BankD     ; clear OAM
 
-    LDA #$48         ; set sprite coords to $48, $2F
-    STA spr_x        ;  this is where we start drawing the puzzle pieces
-    LDA #$2F
-    STA spr_y
+;    LDA #$48         ; set sprite coords to $48, $2F
+;    STA spr_x        ;  this is where we start drawing the puzzle pieces
+;    LDA #$2F
+;    STA spr_y
 
-    LDA #0           ; A will be the overall loop counter and puzzle piece to draw.  Start at zero.
+;    LDA #0           ; A will be the overall loop counter and puzzle piece to draw.  Start at zero.
 
   @Loop:
-    PHA                 ; push loop counter to stack to back it up
+;    PHA                 ; push loop counter to stack to back it up
 
-    JSR DrawPuzzlePiece ; draw this puzzle piece
+;    JSR DrawPuzzlePiece ; draw this puzzle piece
 
-    LDA spr_x           ; add $10 to the X coord (next puzzle piece)
-    CLC
-    ADC #$10
-    STA spr_x
+;    LDA spr_x           ; add $10 to the X coord (next puzzle piece)
+;    CLC
+;    ADC #$10
+;    STA spr_x
 
-    CMP #($40 + $48) ; once we do 4 puzzle pieces in this row...
-    BCC @Continue
-      LDA #$48       ;  ... reset the X coord to first column
-      STA spr_x
-      LDA spr_y      ;  ... and add $10 to Y coord to move to next row
-      CLC
-      ADC #$10
-      STA spr_y
+;    CMP #($40 + $48) ; once we do 4 puzzle pieces in this row...
+;    BCC @Continue
+;      LDA #$48       ;  ... reset the X coord to first column
+;      STA spr_x
+;      LDA spr_y      ;  ... and add $10 to Y coord to move to next row
+;      CLC
+;      ADC #$10
+;      STA spr_y
 
   @Continue:
-    PLA              ; pull the loop counter from the stack
-    CLC
-    ADC #1           ; increment it by 1
-    CMP #$10         ; and keep looping until we do all $10 tiles
-    BCC @Loop
+;    PLA              ; pull the loop counter from the stack
+;    CLC
+;    ADC #1           ; increment it by 1
+;    CMP #$10         ; and keep looping until we do all $10 tiles
+;    BCC @Loop
 
     RTS              ; then exit
 
@@ -3061,74 +3101,74 @@ DrawAllPuzzlePieces:
 
 
 DrawPuzzlePiece:
-    STA tmp+9        ; put slot index to draw in tmp+9 (will use later)
-    TAX
-    LDA puzzle, X    ; get the puzzle piece currently at this slot
-    BNE @Draw        ;  if it's nonzero (slot isn't empty), draw it.  But don't draw an empty slot
+;    STA tmp+9        ; put slot index to draw in tmp+9 (will use later)
+;    TAX
+;    LDA puzzle, X    ; get the puzzle piece currently at this slot
+;    BNE @Draw        ;  if it's nonzero (slot isn't empty), draw it.  But don't draw an empty slot
 
 
   @Done:
-    LDA sprindex     ; after done drawing (or if drawing was skipped due to slot being empty)
-    CLC              ;  increment the sprindex by 4 sprites (4 bytes per sprite)
-    ADC #4*4
-    STA sprindex
-    RTS              ; then exit
+;    LDA sprindex     ; after done drawing (or if drawing was skipped due to slot being empty)
+;    CLC              ;  increment the sprindex by 4 sprites (4 bytes per sprite)
+;    ADC #4*4
+;    STA sprindex
+;    RTS              ; then exit
 
 
   @Draw:
-    ASL A                 ; multiply puzzle piece by 4 to get the desired graphic for this piece
-    ASL A
-    STA tmp+8             ; store that tile ID in tmp+8 (will use later)
+;    ASL A                 ; multiply puzzle piece by 4 to get the desired graphic for this piece
+;    ASL A
+;    STA tmp+8             ; store that tile ID in tmp+8 (will use later)
 
-    LDX sprindex          ; put sprite index in X for indexing
+;    LDX sprindex          ; put sprite index in X for indexing
 
-    LDA spr_y             ; get the desired Y coord
-    STA oam_y, X          ; set the top two sprites to use it
-    STA oam_y+(1*4), X
-    CLC
-    ADC #8
-    STA oam_y+(2*4), X    ; but add 8 to it for the bottom two sprites
-    STA oam_y+(3*4), X
+;    LDA spr_y             ; get the desired Y coord
+;    STA oam_y, X          ; set the top two sprites to use it
+;    STA oam_y+(1*4), X
+;    CLC
+;    ADC #8
+;    STA oam_y+(2*4), X    ; but add 8 to it for the bottom two sprites
+;    STA oam_y+(3*4), X
 
-    LDA spr_x             ; then get X coord
-    STA oam_x, X          ; left sprites get it unaltered
-    STA oam_x+(2*4), X
-    CLC
-    ADC #8
-    STA oam_x+(1*4), X    ; but 8 is added for the right side sprites
-    STA oam_x+(3*4), X
+;    LDA spr_x             ; then get X coord
+;    STA oam_x, X          ; left sprites get it unaltered
+;    STA oam_x+(2*4), X
+;    CLC
+;    ADC #8
+;    STA oam_x+(1*4), X    ; but 8 is added for the right side sprites
+;    STA oam_x+(3*4), X
 
-    LDA tmp+8             ; get desired tile graphic (previously written to tmp+8)
-    STA oam_t, X          ; set each of the 4 sprites' graphics
-    CLC
-    ADC #1
-    STA oam_t+(1*4), X    ; but increment the tile ID by 1 each time
-    CLC
-    ADC #1
-    STA oam_t+(2*4), X
-    CLC
-    ADC #1
-    STA oam_t+(3*4), X
+;    LDA tmp+8             ; get desired tile graphic (previously written to tmp+8)
+;    STA oam_t, X          ; set each of the 4 sprites' graphics
+;    CLC
+;    ADC #1
+;    STA oam_t+(1*4), X    ; but increment the tile ID by 1 each time
+;    CLC
+;    ADC #1
+;    STA oam_t+(2*4), X
+;    CLC
+;    ADC #1
+;    STA oam_t+(3*4), X
 
-    LDA #0                ; sprite attributes = 0  (palettes 0, no flipping, foreground priority)
+;    LDA #0                ; sprite attributes = 0  (palettes 0, no flipping, foreground priority)
 
-    LDY cursor            ; get the cursor
-    CPY tmp+9             ;  and see if it matches our selected slot (previously written to tmp+9)
+;    LDY cursor            ; get the cursor
+;    CPY tmp+9             ;  and see if it matches our selected slot (previously written to tmp+9)
 
-    BNE @DrawAttrib       ; if it does match...
+;    BNE @DrawAttrib       ; if it does match...
 
-      LDA framecounter    ; ... use bit 1 of the framecounter to hide the sprite.  Using bit 1 toggles
-      AND #$02            ;   sprite visibility every other frame (2 frames visible, 2 frames invisible)
-      ASL A               ; shift bit 1 into bit 5 (sprite priority bit).  This gives the sprite background
-      ASL A               ; priority, hiding it behind the background when this bit is set (effectively
-      ASL A               ; making the sprite invisible)
-      ASL A
+;      LDA framecounter    ; ... use bit 1 of the framecounter to hide the sprite.  Using bit 1 toggles
+;      AND #$02            ;   sprite visibility every other frame (2 frames visible, 2 frames invisible)
+;      ASL A               ; shift bit 1 into bit 5 (sprite priority bit).  This gives the sprite background
+;      ASL A               ; priority, hiding it behind the background when this bit is set (effectively
+;      ASL A               ; making the sprite invisible)
+;      ASL A
 
   @DrawAttrib:
-    STA oam_a, X          ; copy the desired attribute byte to each sprite
-    STA oam_a+(1*4), X
-    STA oam_a+(2*4), X
-    STA oam_a+(3*4), X
+;    STA oam_a, X          ; copy the desired attribute byte to each sprite
+;    STA oam_a+(1*4), X
+;    STA oam_a+(2*4), X
+;    STA oam_a+(3*4), X
 
     JMP @Done             ; and JMP to the exit
 
@@ -3147,33 +3187,33 @@ DrawPuzzlePiece:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 MiniGame_AnimateSlide:
-    LDA tmp+1              ; the old empty slot becomes the new cursor
-    STA cursor             ;  since the old cursor will become the new empty slot -- and
+;    LDA tmp+1              ; the old empty slot becomes the new cursor
+;    STA cursor             ;  since the old cursor will become the new empty slot -- and
                            ;  we never want the empty slot and cursor to be on the same tile
 
-    LDA #0                 ; A will be a makeshift loop counter.  We will loop 16 times, moving
+;    LDA #0                 ; A will be a makeshift loop counter.  We will loop 16 times, moving
                            ;  the puzzle pieces 1 pixel each iteration.
   @AnimateLoop:
-    PHA                    ; back up loop counter
-    JSR WaitForVBlank_L    ; wait for VBlank
-    LDA #>oam              ; do sprite DMA
-    STA $4014
-    JSR MusicPlay_L        ; and play the music
+;    PHA                    ; back up loop counter
+;    JSR WaitForVBlank_L    ; wait for VBlank
+;    LDA #>oam              ; do sprite DMA
+;    STA $4014
+;    JSR MusicPlay_L        ; and play the music
 
-    LDA mg_slidespr        ; then slide the sprites of each tile being moved 1 pixel
-    JSR @SlideTile         ;   in the desired direction
-    LDA mg_slidespr+1
-    JSR @SlideTile
-    LDA mg_slidespr+2
-    JSR @SlideTile
+;    LDA mg_slidespr        ; then slide the sprites of each tile being moved 1 pixel
+;    JSR @SlideTile         ;   in the desired direction
+;    LDA mg_slidespr+1
+;    JSR @SlideTile
+;    LDA mg_slidespr+2
+;    JSR @SlideTile
 
-    PLA                    ; get loop counter (previously pushed)
-    CLC
-    ADC #1                 ; increment it by 1
-    CMP #$10               ; and keep looping until we reach $10 ($10 iterations)
-    BCC @AnimateLoop
+;    PLA                    ; get loop counter (previously pushed)
+;    CLC
+;    ADC #1                 ; increment it by 1
+;    CMP #$10               ; and keep looping until we reach $10 ($10 iterations)
+;    BCC @AnimateLoop
 
-    JMP MiniGameLoop       ; once finished -- return to the minigame loop
+;    JMP MiniGameLoop       ; once finished -- return to the minigame loop
 
   ;;
   ;;  This local subroutine moves the tile in the given slot (in A) 1 pixel in the desired direction
@@ -3184,40 +3224,40 @@ MiniGame_AnimateSlide:
 
 
   @SlideTile:
-    BPL :+              ; if the selected sprite is a negative number, it indicates that
-      RTS               ;  there is no sprite we need to move here.  So just exit
+;    BPL :+              ; if the selected sprite is a negative number, it indicates that
+;      RTS               ;  there is no sprite we need to move here.  So just exit
 
-:   ASL A               ; otherwise, multiply the slot ID by 16 (4 bytes per sprite * 4 sprites
-    ASL A               ;  per tile)
-    ASL A
-    ASL A
-    TAX                 ;  and put in X for indexing OAM
+;:   ASL A               ; otherwise, multiply the slot ID by 16 (4 bytes per sprite * 4 sprites
+;    ASL A               ;  per tile)
+;    ASL A
+;    ASL A
+;    TAX                 ;  and put in X for indexing OAM
 
-    LDY mg_slidedir            ; get the direction we're going to move in Y
-    LDA lut_MGDirection_Y, Y   ;  use that to get the Y and X offsets
-    STA tmp                    ; 'tmp' will be added to sprite's Y coord
-    LDA lut_MGDirection_X, Y
-    STA tmp+1                  ; 'tmp+1' will be added to sprite's X coord
+;    LDY mg_slidedir            ; get the direction we're going to move in Y
+;    LDA lut_MGDirection_Y, Y   ;  use that to get the Y and X offsets
+;    STA tmp                    ; 'tmp' will be added to sprite's Y coord
+;    LDA lut_MGDirection_X, Y
+;    STA tmp+1                  ; 'tmp+1' will be added to sprite's X coord
 
-    LDY #4              ; Y is our loop counter (4 iterations -- one for each sprite making up this tile)
+;    LDY #4              ; Y is our loop counter (4 iterations -- one for each sprite making up this tile)
   @SlideLoop:
-    LDA oam_y, X        ; add 'tmp' to sprite's Y coord
-    CLC
-    ADC tmp
-    STA oam_y, X
+;    LDA oam_y, X        ; add 'tmp' to sprite's Y coord
+;    CLC
+;    ADC tmp
+;    STA oam_y, X
 
-    LDA oam_x, X        ; and tmp+1 to sprite's X coord
-    CLC
-    ADC tmp+1
-    STA oam_x, X
+;    LDA oam_x, X        ; and tmp+1 to sprite's X coord
+;    CLC
+;    ADC tmp+1
+;    STA oam_x, X
 
-    TXA                 ; add 4 to our sprite index (look at next sprite)
-    CLC
-    ADC #4
-    TAX
+;    TXA                 ; add 4 to our sprite index (look at next sprite)
+;    CLC
+;    ADC #4
+;    TAX
 
-    DEY                 ; decrement our loop counter
-    BNE @SlideLoop      ; and repeat until it expires (4 iterations)
+;    DEY                 ; decrement our loop counter
+;    BNE @SlideLoop      ; and repeat until it expires (4 iterations)
 
     RTS                 ; then exit
 
@@ -3231,7 +3271,7 @@ MiniGame_AnimateSlide:
 ;;  Bridge Scene palette [$BF00 :: 0x37F10]
 
 lut_BridgeBGPal:
-  .BYTE $0F,$00,$02,$30,  $0F,$3B,$11,$24,  $0F,$3B,$0B,$2B,  $0F,$00,$0F,$30
+;  .BYTE $0F,$00,$02,$30,  $0F,$3B,$11,$24,  $0F,$3B,$0B,$2B,  $0F,$00,$0F,$30
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3239,7 +3279,7 @@ lut_BridgeBGPal:
 ;;  Ending Scene (epilogue) palette  [$BF10 :: 0x37F20]
 
 lut_EndingBGPal:
-  .BYTE $0F,$00,$01,$30,  $0F,$32,$21,$30,  $0F,$2C,$2A,$1A,  $0F,$00,$0F,$30
+;  .BYTE $0F,$00,$01,$30,  $0F,$32,$21,$30,  $0F,$2C,$2A,$1A,  $0F,$00,$0F,$30
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

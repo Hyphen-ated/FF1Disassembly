@@ -3614,6 +3614,7 @@ IntroTitlePrepare:
     STA joy_start
     STA cursor
     STA joy_prevdir        ; as well as resetting the cursor and previous joy direction
+    STA sq1_scoreptr_backup ; set music backup flag so we know a fanfare didn't just happen
 
     JMP ClearNT            ; then wipe the nametable clean and exit
 
@@ -9752,5 +9753,5 @@ lut_ArmorPermissions:
 
 ;; unused bytes  [$BFF0 :: 0x3C000]
 
-  .BYTE   $00,$00,$00,$00,$00,$00,$00,$00,    $00,$00,$00,$00,$00,$00,$00,$00
+;  .BYTE   $00,$00,$00,$00,$00,$00,$00,$00,    $00,$00,$00,$00,$00,$00,$00,$00
 
