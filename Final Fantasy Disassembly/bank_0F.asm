@@ -1743,6 +1743,8 @@ PrepOverworld:
     STA joy_select
     STA mapflags        ; zeroing map flags indicates we're on the overworld map
 
+		STA dlgmusic_backup ;NEW
+
     JSR LoadOWCHR           ; load up necessary CHR
     JSR LoadOWTilesetData   ; the tileset
     JSR LoadMapPalettes     ; palettes
@@ -1811,7 +1813,7 @@ EnterOW_PalCyc:
 NewGame_LoadStartingStats:
     LDA #BANK_STARTINGSTATS ; swap in bank containing starting stats
     JSR SwapPRG_L
-    
+
     LDX #$00                ; load up the starting stats for each character
     JSR @LoadStats
     LDX #$40
@@ -1820,7 +1822,7 @@ NewGame_LoadStartingStats:
     JSR @LoadStats
     LDX #$C0
   ; JMP @LoadStats
-    
+
 
   @LoadStats:
     LDA ch_class, X         ; get the class
@@ -1829,15 +1831,15 @@ NewGame_LoadStartingStats:
     ASL A
     ASL A
     TAY                     ; source index in Y
-    
+
     ;; lut_ClassStartingStats table contains $B bytes of data, padded to $10
     ;;   byte 0 is a redundant and unused class ID byte.
     ;;   The rest is as outlined below
-    
+
     LDA lut_ClassStartingStats+1, Y ; starting HP
     STA ch_curhp, X
     STA ch_maxhp, X
-    
+
     LDA lut_ClassStartingStats+2, Y ; base stats
     STA ch_str, X
     LDA lut_ClassStartingStats+3, Y
@@ -1848,7 +1850,7 @@ NewGame_LoadStartingStats:
     STA ch_vit, X
     LDA lut_ClassStartingStats+6, Y
     STA ch_luck, X
-    
+
     LDA lut_ClassStartingStats+7, Y ; sub stats
     STA ch_dmg, X
     LDA lut_ClassStartingStats+8, Y
@@ -1857,7 +1859,7 @@ NewGame_LoadStartingStats:
     STA ch_evade, X
     LDA lut_ClassStartingStats+$A, Y
     STA ch_magdef, X
-    
+
     ; Award starting MP if the class ID is >= RM, but < KN
     LDA ch_class, X
     CMP #CLS_RM
@@ -2304,7 +2306,7 @@ StandardMapLoop:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-ProcessSMInput:  
+ProcessSMInput:
     LDA joy_a              ; see if user pressed the A button
     BEQ @CheckStart        ; if not, skip ahead to check Start button.  Otherwise...
 
@@ -2873,7 +2875,7 @@ LoadSMTilesetData:
  ; load tileset properties
 
     LDA cur_tileset           ; set src pointer to point to lut_SMTilesetProp+(tileset*256)
-    CLC                       ; 256 bytes of tile properties per tileset 
+    CLC                       ; 256 bytes of tile properties per tileset
     ADC #>lut_SMTilesetProp
     STA tmp+1
 
@@ -3246,7 +3248,7 @@ SMMove_Up:
   @NoTileChg:
     SEC                    ; here, A=move counter
     SBC move_speed         ; subtract the movement speed from the counter
-    AND #$0F               ; mask it to keep it in a 16x16 tile 
+    AND #$0F               ; mask it to keep it in a 16x16 tile
     BEQ @FullTile          ; if it's now zero... we've moved a full tile
 
     STA move_ctr_y         ; otherwise, simply write back the move counter
@@ -3519,7 +3521,7 @@ SMMove_Door:
 
   @NT2000:
     ASL A                      ; double the column to get the PPU dest X coord (2 ppu tiles per map tile)
-    ORA lut_2xNTRowStartLo, X  ; OR that with the NT address from the LUT, which gives us the 
+    ORA lut_2xNTRowStartLo, X  ; OR that with the NT address from the LUT, which gives us the
     STA doorppuaddr            ;  PPU address of the desired tile to redraw
     LDA lut_2xNTRowStartHi, X  ;  record this address to doorppuaddr
     STA doorppuaddr+1
@@ -3735,8 +3737,14 @@ PrepStandardMap:
 
     LDX cur_tileset               ; get the tileset
     LDA @lut_TilesetMusicTrack, X ; use it to get the music track tied to this tileset
+
+		CMP	dlgmusic_backup 		;NEW - See if music is the same - if so, don't restart the music
+		BEQ @DontRestartMusic
+
     STA music_track               ; play it
     STA dlgmusic_backup           ; and record it so it can be restarted later by the dialogue box
+
+@DontRestartMusic:					;END NEW
 
     LDA #DOWN
     STA facing              ; start the player facing downward
@@ -3877,7 +3885,7 @@ DrawFullMap:
 
 
 StartMapMove:
-    LDA scroll_y         ; copy Y scroll to 
+    LDA scroll_y         ; copy Y scroll to
     STA mapdraw_nty      ;   nt draw Y
 
     LDA #$FF             ; put overworld mask ($FF -- ow is 256x256 tiles )
@@ -4050,7 +4058,7 @@ DoMapDrawJob:
 
     LDA mapdraw_job     ; find which job we're to do
     SEC
-    SBC #1              ; decrement the job (to mark this job as complete 
+    SBC #1              ; decrement the job (to mark this job as complete
     STA mapdraw_job     ;   and to move to the next job)
 
     BEQ @Attributes     ; if original job was 1 (0 after decrement)... do attributes
@@ -4596,7 +4604,7 @@ DrawMapRowCol:
     INY                ; inc source index (next tile)
     DEX                ; dec down counter (for NT boundary)
     BNE :+
-    
+
       LDA tmp+1      ; at NT boundary again.. same deal.  load high byte of dest
       EOR #$04       ;   toggle NT bit
       STA $2006      ;   and write back
@@ -4677,7 +4685,7 @@ DrawMapRowCol:
 
 :   INY              ; inc our source index
     CPY #$0F         ; loop until we've drawn 15 tiles
-    BCC @ColLoop_R   ;  once we have... 
+    BCC @ColLoop_R   ;  once we have...
     RTS              ;  RTS out!  (full column drawn)
 
 
@@ -4774,7 +4782,7 @@ PrepAttributePos:
        BCS @Exit
        JMP @Loop
 
-@Exit: 
+@Exit:
     RTS
 
 
@@ -4823,7 +4831,7 @@ DrawMapAttributes:
     LDA mapflags
     LDX #$10        ; set X to $10 (if row)
     AND #$02        ; check if we're drawing a row or column
-    BEQ :+ 
+    BEQ :+
       LDX #$0F      ; set X to $0F (if column)
 
 :   STX tmp+1       ; dump X to tmp+1.  This is our upper-bound
@@ -5172,7 +5180,7 @@ ShowDialogueBox:
     STA tmp+2              ; reset the 3-step counter for WaitScanline
 
     LDA #53
-    STA sq2_sfx            ; indicate sq2 is going to be playing a sound effect for the next 53 frames
+		STA sq2_sfx            ; indicate sq2 is going to be playing a sound effect for the next 53 frames
     LDA #$8E
     JSR DialogueBox_Sfx    ; and play the "upward sweep" sound effect that plays when the dialogue box opened.
 
@@ -5186,7 +5194,7 @@ ShowDialogueBox:
      ; open the dialogue box
 
    @OpenLoop:
-      JSR DialogueBox_Frame; do a frame
+      JSR DialogueBox_Frame ; do a frame
 
       LDA tmp+11
       CLC
@@ -5197,6 +5205,10 @@ ShowDialogueBox:
       BCC @OpenLoop        ; keep looping until the entire box is visible
 
 
+		;NEW
+JSR PlayNewTCSFX
+
+
     LDA dlgsfx             ; see if a sound effect needs to be played
     BEQ @WaitForButton_1   ; if not (dlgsfx = 0), skip ahead
     LDX #$54               ; Use music track $54 for sfx (special fanfare music)
@@ -5204,6 +5216,7 @@ ShowDialogueBox:
     BEQ :+                 ; if dlgsfx > 1...
       LDX #$58             ;  ... then use track $58 instead (treasure chest ditty)
 :   STX music_track        ; write the desired track to the music_track to get it started
+
 
   ; there are two seperate 'WaitForButton' loops because the dialogue box closes when the
   ; user presses A, or when they press any directional button.  The first loop waits
@@ -5311,9 +5324,11 @@ DialogueBox_Frame:
 
         ; now the game loops to burn VBlank time, so that it can start doing raster effects to split the screen
 
-    LDY #$FC           ; count Y down from $FC
+
+;NEW- register changed from Y to X to try and avoid a conflict with nested loops; doesn't seem to cause other problems?
+    LDX #$FC           ; count Y down from $FC
   @BurnVBlankLoop:     ; On entry to this loop, game is about 565 cycles into VBlank)
-    DEY                    ; 2 cycles
+    DEX                    ; 2 cycles
     NOP                    ; +2=4
     NOP                    ; +2=6
     NOP                    ; +2=8
@@ -5433,7 +5448,7 @@ ScreenWipe_Open:
 ScreenWipe_Close:
     JSR StartScreenWipe     ; do screen wipe prepwork
 
-    LDA #10+11              ; start the wipe at scanline 10 
+    LDA #10+11              ; start the wipe at scanline 10
     STA tmp+4
     LDA #220+1              ; start with 221 scanlines visible
     STA tmp+5               ;  this will make lines 10-230 visible
@@ -5464,10 +5479,14 @@ ScreenWipe_Close:
 
 ScreenWipe_Finalize:
     STA $2001          ; turn on/off the PPU (Close turns it off, Open turns it on)
-    LDA #0
-    STA $4002          ; then silence the Sq1 sound effect by setting its F-value to zero
-    STA $4003
 
+		;JMP @AudioSkip								 ;NEW - Skips the audio section below
+
+    ;LDA #0
+    ;STA $4002          ; then silence the Sq1 sound effect by setting its F-value to zero
+    ;STA $4003
+
+;@AudioSkip:
     RTS                ; and exit
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5543,6 +5562,8 @@ ScreenWipeFrame:
     JSR WaitForVBlank_L          ; wait for VBlank
     JSR ScreenWipeFrame_Prep     ; then do prepwork for this frame
 
+		JSR CallMusicPlay_NoSwap ;NEW - Music needs to be updated every frame
+
     LDX #10                  ; This loop "fine-tunes" the wait.  It works out to 1+5*X cycles
     @InitialWait:            ;  so you can change the value X loads here to increase/decrease
       DEX                    ;  the wait.
@@ -5573,26 +5594,28 @@ ScreenWipeFrame:
     LDA #$10                 ; then turn BG rendering back off.  Leave it off for the rest of the frame
     STA $2001
 
-    LDA tmp+5           ; check the number of visible scanlines
-    AND #$0C            ; mask out bits 2,3
-    BNE @Exit           ; if either are nonzero, exit
+		;JMP @Exit						;NEW - Skip the audio section below
+
+    ;LDA tmp+5           ; check the number of visible scanlines
+    ;AND #$0C            ; mask out bits 2,3
+    ;BNE @Exit           ; if either are nonzero, exit
                         ; otherwise... modify the playing wipe sound effect
                         ;  updating the sound effect this way makes it effectively update only
                         ;  once every 4 frames.
 
-     LDA tmp+5
-     EOR #$FF           ; invert the number of visible scanlines (so that fewer scanlines visible
-     ASL A              ;   = higher period = lower pitch)
-     ROL tmp            ; then multiply by 8, rotating carry into tmp (high bits of tmp are unimportant
-     ASL A              ;  as they only set the length counter).
-     ROL tmp
-     ASL A
-     STA $4002          ; then write that period to sq1's F value
-     ROL tmp
-     LDA tmp
-     STA $4003          ; output F value is -N * 8 where 'N' is the visible scanlines
+     ;LDA tmp+5
+     ;EOR #$FF           ; invert the number of visible scanlines (so that fewer scanlines visible
+     ;ASL A              ;   = higher period = lower pitch)
+     ;ROL tmp            ; then multiply by 8, rotating carry into tmp (high bits of tmp are unimportant
+     ;ASL A              ;  as they only set the length counter).
+     ;ROL tmp
+     ;ASL A
+     ;STA $4002          ; then write that period to sq1's F value
+     ;ROL tmp
+     ;LDA tmp
+     ;STA $4003          ; output F value is -N * 8 where 'N' is the visible scanlines
 
-  @Exit:
+  ;@Exit:
     RTS
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5659,15 +5682,21 @@ StartScreenWipe:
     LDA #>oam             ; and do sprite DMA
     STA $4014
 
-    LDA #$01              ; silence all channels except for square 1
-    STA $4015             ;   this stops all music.  Square 1 is used for the wipe sound effect
 
-    LDA #$38              ; 12.5% duty (harsh), volume=8
-    STA $4000
-    LDA #%10001010        ; sweep downwards in pitch with speed=0 (fast!) and shift=2 (medium)
-    STA $4001             ;  don't set F-value here, though -- that isn't done until
+
+
+		;JMP @AudioSkip										;NEW - Skips the audio section below
+
+    ;LDA #$01              ; silence all channels except for square 1
+    ;STA $4015             ;   this stops all music.  Square 1 is used for the wipe sound effect
+
+    ;LDA #$38              ; 12.5% duty (harsh), volume=8
+    ;STA $4000
+    ;LDA #%10001010        ; sweep downwards in pitch with speed=0 (fast!) and shift=2 (medium)
+    ;STA $4001             ;  don't set F-value here, though -- that isn't done until
                           ;  ScreenWipeFrame
 
+;@AudioSkip:
     RTS                   ; exit
 
 
@@ -7067,7 +7096,7 @@ FindEmptyWeaponSlot:
 ;;
 ;;  Find Empty Armor Slot  [$DD46 :: 0x3DD56]
 ;;
-;;    Finds first available armor slot.  Identical to above FindEmptyWeaponSlot 
+;;    Finds first available armor slot.  Identical to above FindEmptyWeaponSlot
 ;;  routine, except it is for armor instead of weapons.  See that routine for comments
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -7133,17 +7162,19 @@ OpenTreasureChest:
     LDA lut_Treasure, X      ; use it to get the contents of the chest
     STA dlg_itemid           ; record that as the item id so it can be printed in the dialogue box
 
-    CMP #TCITYPE_WEPSTART    ; see if the ID is >= weapon_ids
-    BCS @NotItem             ; if it is, it's not an item -- branch ahead
+;TEMP-room
+;    CMP #TCITYPE_WEPSTART    ; see if the ID is >= weapon_ids
+;    BCS @NotItem             ; if it is, it's not an item -- branch ahead
 
   ;;
   ;; Chest contains an item
   ;;
 
     TAX                      ; put item ID in X
-    LDA items, X             ; see how many of this item the player has
-    CMP #99                  ; see if they have >= 99
-    BCS :+
+;TEMP-room
+;    LDA items, X             ; see how many of this item the player has
+;    CMP #99                  ; see if they have >= 99
+;    BCS :+
       INC items, X           ; give them one of this item -- but only if they have < 99
 
 :   LDX tileprop+1           ; re-get the chest index
@@ -7152,60 +7183,144 @@ OpenTreasureChest:
     STA game_flags, X        ;  too many.  That is arguably BUGGED.
 
     LDA dlg_itemid               ; get the item ID again
-    CMP #item_qty_start - items  ; see if it's a qty item (normal item -- not key item)
-    BCC :+
-      INC dlgsfx                 ; if >= qty_start, this is not a key item.  set dlgsfx to 2 (normal TC jingle)
-:   INC dlgsfx                   ;  otherwise only set it to 1 (key item fanfare)
+    CMP #item_qty_start - items - 1  ;NEW - Flip comparison, fix off-by-1			 ; see if it's a qty item (normal item -- not key item)
+    BCS :+
+      INC dlgsfx                 ;only check for fanefare, not normal chests					; if >= qty_start, this is not a key item.  set dlgsfx to 2 (normal TC jingle)
+;:   INC dlgsfx                   ;  otherwise only set it to 1 (key item fanfare)
+:
 
-    LDA #DLGID_TCGET             ; put the treasure chest dialogue ID in A before exiting!
-    RTS
+		LDA #DLGID_TCGET     	 	 ;NEW END      ; put the treasure chest dialogue ID in A before exiting!
+    RTS              ; then exit
+
+
+
+;NOTES:  G B D# G B
+PlayNewTCSFX:
+;Since music isn't updating mid play this does nothing; should be needed again when music is updating correctly
+    LDA #$19                ; indicate sq2 is busy with sound effects for 'i' frames (hex)
+    STA sq2_sfx
+
+
+    LDA #%00011100
+    STA $4006
+		LDA #%00101001					; 1 00011100 = G4             (too low) -> 010 00111001 = G3
+    STA $4007
+		JSR TCSFXLoopStart
+
+
+    LDA #%11100001
+    STA $4006
+    LDA #%00101000		      ;  11100001 = B4        (too low)001 11000100 = B3
+    STA $4007
+    JSR TCSFXLoopStart
+
+
+    LDA #%11001001
+    STA $4006
+    LDA #%00101000		      ; 11001001  = D#5        (too low)001 11000100 =
+    STA $4007
+    JSR TCSFXLoopStart
+
+
+    LDA #%10001110
+    STA $4006
+    LDA #%00101000		      ; 10001110 = G5        (too low)001 11000100 =
+    STA $4007
+    JSR TCSFXLoopStart
+
+
+    LDA #%01110000
+    STA $4006
+    LDA #%00101000		      ; 01110000 = B5        (too low)001 11000100 =
+    STA $4007
+    JSR TCSFXLoopStart
+
+										 ; All 5 notes have played
+    LDA #$30         ; silence sq2 (vol to zero)
+    STA $4004
+    LDA #$00
+    STA $4006        ; and reset sq2's freq to 0
+
+RTS
+
+
+;Loop to pause frames while notes are playing
+
+  TCSFXLoopStart:
+
+		; Same for all notes
+		LDA #%01111111          ; 25% duty (mid), volume=max
+    STA $4004
+    LDA #%01111111          ; no sweep
+    STA $4005
+
+
+    LDY #$4         ; loop i+1 times
+  @LoopNote:
+		JSR DialogueBox_Frame
+    ;  JSR WaitForVBlank_L     ; do a frame
+
+      DEY            ; dec Y
+      BPL @LoopNote      ; and repeat until Y wraps
+			;Maybe try updating music every other loop or something?
+			;JSR CallMusicPlay_NoSwap
+RTS
+
+
+
+
+;TEMP - Commented out to make room
 
   ;; jumps here if chest doesn't have a normal item
   @NotItem:                  ; if not a normal item....
-    CMP #TCITYPE_ARMSTART    ; see if item is a weapon by seeing if it's < armor start
-    BCS @NotWeapon           ; if not... jump ahead
+;    CMP #TCITYPE_ARMSTART    ; see if item is a weapon by seeing if it's < armor start
+;    BCS @NotWeapon           ; if not... jump ahead
 
-  ;; 
+  ;;
   ;; Chest contains a weapon
   ;;
 
-    SEC                      ; subtract to convert the item ID to a 1-based weapon index
-    SBC #TCITYPE_WEPSTART-1  ;  don't make it zero based because zero is an empty slot
-    STA tmp                  ; store the equip index in temp RAM
+;    SEC                      ; subtract to convert the item ID to a 1-based weapon index
+;    SBC #TCITYPE_WEPSTART-1  ;  don't make it zero based because zero is an empty slot
+;    STA tmp                  ; store the equip index in temp RAM
 
-    JSR FindEmptyWeaponSlot  ; Find an available slot to place this weapon in
-    BCS @TooFull             ;  if there are no available slots, jump to 'Too Full' message
+;    JSR FindEmptyWeaponSlot  ; Find an available slot to place this weapon in
+;    BCS @TooFull             ;  if there are no available slots, jump to 'Too Full' message
                              ; otherwise, equipment get
 
   ;;
   ;; General stuff for all non-normal items
   ;;
 
+
+;TEMP-commented out to make room
+
+
   @EquipmentGet:
-    LDA tmp                  ; get previously tmp'd equipment ID
-    STA ch_stats, X          ; add it to the previously found empty slot
+;    LDA tmp                  ; get previously tmp'd equipment ID
+;    STA ch_stats, X          ; add it to the previously found empty slot
                              ;  then continue on to mark the chest as open
 
   @OpenChest:
-    LDX tileprop+1           ; get the ID of this chest
-    LDA game_flags, X        ; flip on the TCOPEN flag to mark this TC as open
-    ORA #GMFLG_TCOPEN
-    STA game_flags, X
+;    LDX tileprop+1           ; get the ID of this chest
+;    LDA game_flags, X        ; flip on the TCOPEN flag to mark this TC as open
+;    ORA #GMFLG_TCOPEN
+;    STA game_flags, X
 
-    INC dlgsfx               ; set dlgsfx to 2 to play the TC jingle
-    INC dlgsfx
+    ;INC dlgsfx 						 ;NEW - Remove regular chest sound              ; set dlgsfx to 2 to play the TC jingle
+    ;INC dlgsfx
 
-    LDA #DLGID_TCGET         ; and select "In This chest you found..." text
-    RTS
+;    LDA #DLGID_TCGET         ; and select "In This chest you found..." text
+;    RTS
 
   @TooFull:                  ; If too full...
-    LDA #DLGID_CANTCARRY     ; select "You can't carry any more" text
-    RTS
+;    LDA #DLGID_CANTCARRY     ; select "You can't carry any more" text
+;    RTS
 
   ;; jumps here if chest doesn't have a normal item or a weapon
   @NotWeapon:
-    CMP #TCITYPE_GPSTART     ; see if item is armor by seeing if it's < gp start
-    BCS @Gold                ; if not... jump ahead
+;    CMP #TCITYPE_GPSTART     ; see if item is armor by seeing if it's < gp start
+;    BCS @Gold                ; if not... jump ahead
 
   ;;
   ;; Chest contains armor
@@ -7246,39 +7361,41 @@ OpenTreasureChest:
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;TEMP - commented for room
+
 AddGPToParty:
-    LDA gold        ; Add the 3 bytes of GP to the
-    CLC             ;  party's gold total
-    ADC tmp
-    STA gold
-    LDA gold+1
-    ADC tmp+1
-    STA gold+1
-    LDA gold+2
-    ADC tmp+2
-    STA gold+2
+;    LDA gold        ; Add the 3 bytes of GP to the
+;    CLC             ;  party's gold total
+;    ADC tmp
+;    STA gold
+;    LDA gold+1
+;    ADC tmp+1
+;    STA gold+1
+;    LDA gold+2
+;    ADC tmp+2
+;    STA gold+2
 
-    CMP #^1000000   ; see if high byte is over maximum
-    BCC @Exit       ; if gold_high < max_high, exit
+;    CMP #^1000000   ; see if high byte is over maximum
+;    BCC @Exit       ; if gold_high < max_high, exit
 
-    LDA gold+1
-    CMP #>1000000   ; check middle bytes
-    BCC @Exit       ; if gold < max, exit
-    BEQ @CheckLow   ; if gold = max, check low bytes
-    BCS @Max        ; if gold > max, over maximum
+;    LDA gold+1
+;    CMP #>1000000   ; check middle bytes
+;    BCC @Exit       ; if gold < max, exit
+;    BEQ @CheckLow   ; if gold = max, check low bytes
+;    BCS @Max        ; if gold > max, over maximum
 
   @CheckLow:
-    LDA gold
-    CMP #<1000000   ; check low bytes
-    BCC @Exit       ; if gold < max, exit
+;    LDA gold
+;    CMP #<1000000   ; check low bytes
+;    BCC @Exit       ; if gold < max, exit
 
   @Max:
-    LDA #<999999    ; replace gold with maximum
-    STA gold
-    LDA #>999999
-    STA gold+1
-    LDA #^999999
-    STA gold+2
+;    LDA #<999999    ; replace gold with maximum
+;    STA gold
+;    LDA #>999999
+;    STA gold+1
+;    LDA #^999999
+;    STA gold+2
 
   @Exit:
     RTS
